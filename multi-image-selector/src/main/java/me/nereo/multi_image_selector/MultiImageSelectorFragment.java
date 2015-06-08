@@ -2,6 +2,7 @@ package me.nereo.multi_image_selector;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
@@ -18,6 +19,7 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.widget.ListPopupWindow;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,6 +29,8 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.GridView;
+import android.widget.ImageView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,7 +44,7 @@ import me.nereo.multi_image_selector.adapter.FolderAdapter;
 import me.nereo.multi_image_selector.adapter.ImageGridAdapter;
 import me.nereo.multi_image_selector.bean.Folder;
 import me.nereo.multi_image_selector.bean.Image;
-import me.nereo.multi_image_selector.utils.FileUtils;
+import me.nereo.multi_image_selector.utils.PictureUtils;
 import me.nereo.multi_image_selector.utils.TimeUtils;
 
 /**
@@ -92,6 +96,8 @@ public class MultiImageSelectorFragment extends Fragment {
     private Button mPreviewBtn;
     // 底部View
     private View mPopupAnchorView;
+    //弹出popupwindow透明背景
+    private ImageView imgPopbg;
 
     private int mDesireImageCount;
 
@@ -100,7 +106,7 @@ public class MultiImageSelectorFragment extends Fragment {
 
     private int mGridWidth, mGridHeight;
 
-    private File mTmpFile;
+    private Uri mTmpUri;
 
     @Override
     public void onAttach(Activity activity) {
@@ -143,6 +149,8 @@ public class MultiImageSelectorFragment extends Fragment {
 
         mPopupAnchorView = view.findViewById(R.id.footer);
 
+        imgPopbg = (ImageView) view.findViewById(R.id.img_pop_bg);
+
         mTimeLineText = (TextView) view.findViewById(R.id.timeline_area);
         // 初始化，先隐藏当前timeline
         mTimeLineText.setVisibility(View.GONE);
@@ -162,6 +170,7 @@ public class MultiImageSelectorFragment extends Fragment {
                     mFolderPopupWindow.dismiss();
                 } else {
                     mFolderPopupWindow.show();
+                    imgPopbg.setVisibility(View.VISIBLE);
                     int index = mFolderAdapter.getSelectIndex();
                     index = index == 0 ? index : index - 1;
                     mFolderPopupWindow.getListView().setSelection(index);
@@ -186,14 +195,6 @@ public class MultiImageSelectorFragment extends Fragment {
         mGridView.setOnScrollListener(new AbsListView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(AbsListView absListView, int state) {
-
-                final Picasso picasso = Picasso.with(getActivity());
-                if(state == SCROLL_STATE_IDLE || state == SCROLL_STATE_TOUCH_SCROLL){
-                    picasso.resumeTag(getActivity());
-                }else{
-                    picasso.pauseTag(getActivity());
-                }
-
                 if(state == SCROLL_STATE_IDLE){
                     // 停止滑动，日期指示器消失
                     mTimeLineText.setVisibility(View.GONE);
@@ -265,13 +266,19 @@ public class MultiImageSelectorFragment extends Fragment {
      */
     private void createPopupFolderList(int width, int height) {
         mFolderPopupWindow = new ListPopupWindow(getActivity());
-        mFolderPopupWindow.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        mFolderPopupWindow.setBackgroundDrawable(new ColorDrawable(Color.WHITE));
         mFolderPopupWindow.setAdapter(mFolderAdapter);
         mFolderPopupWindow.setContentWidth(width);
         mFolderPopupWindow.setWidth(width);
-        mFolderPopupWindow.setHeight(height * 5 / 8);
+        mFolderPopupWindow.setHeight(height * 6 / 8);
         mFolderPopupWindow.setAnchorView(mPopupAnchorView);
         mFolderPopupWindow.setModal(true);
+        mFolderPopupWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                imgPopbg.setVisibility(View.GONE);
+            }
+        });
         mFolderPopupWindow.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -330,14 +337,25 @@ public class MultiImageSelectorFragment extends Fragment {
         // 相机拍照完成后，返回图片路径
         if(requestCode == REQUEST_CAMERA){
             if(resultCode == Activity.RESULT_OK) {
-                if (mTmpFile != null) {
+                if (mTmpUri != null) {
                     if (mCallback != null) {
-                        mCallback.onCameraShot(mTmpFile);
+                        String path = PictureUtils.getSelectImagePath(getActivity(),mTmpUri);
+                        mCallback.onCameraShot(new File(path));
                     }
                 }
             }else{
-                if(mTmpFile != null && mTmpFile.exists()){
-                    mTmpFile.delete();
+                deleteImage();
+            }
+        }
+    }
+
+    private void deleteImage(){
+        if(mTmpUri!=null) {
+            String path = PictureUtils.getSelectImagePath(getActivity(), mTmpUri);
+            if (!TextUtils.isEmpty(path)) {
+                if (!new File(path).exists()){
+                    getActivity().getContentResolver().delete(mTmpUri, null, null);
+                    new File(path).delete();
                 }
             }
         }
@@ -390,16 +408,31 @@ public class MultiImageSelectorFragment extends Fragment {
      */
     private void showCameraAction() {
         // 跳转到系统照相机
-        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        if(cameraIntent.resolveActivity(getActivity().getPackageManager()) != null){
-            // 设置系统相机拍照后的输出路径
-            // 创建临时文件
-            mTmpFile = FileUtils.createTmpFile(getActivity());
-            cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(mTmpFile));
-            startActivityForResult(cameraIntent, REQUEST_CAMERA);
-        }else{
-            Toast.makeText(getActivity(), R.string.msg_no_camera, Toast.LENGTH_SHORT).show();
+//        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//        if(cameraIntent.resolveActivity(getActivity().getPackageManager()) != null){
+//            // 设置系统相机拍照后的输出路径
+//            // 创建临时文件
+//            mTmpFile = FileUtils.createTmpFile(getActivity());
+//            cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(mTmpFile));
+//            startActivityForResult(cameraIntent, REQUEST_CAMERA);
+//        }else{
+//            Toast.makeText(getActivity(), R.string.msg_no_camera, Toast.LENGTH_SHORT).show();
+//        }
+
+        if(mDesireImageCount == resultList.size()){
+            Toast.makeText(getActivity(), R.string.msg_amount_limit, Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        String fileName = "img_" + System.currentTimeMillis() + ".jpg";
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Images.Media.TITLE, fileName);
+        values.put(MediaStore.Images.Media.DESCRIPTION, "");
+        mTmpUri = getActivity().getContentResolver().insert(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, mTmpUri);
+        startActivityForResult(intent, REQUEST_CAMERA);
     }
 
     /**
@@ -452,7 +485,9 @@ public class MultiImageSelectorFragment extends Fragment {
                 MediaStore.Images.Media.DATA,
                 MediaStore.Images.Media.DISPLAY_NAME,
                 MediaStore.Images.Media.DATE_ADDED,
-                MediaStore.Images.Media._ID };
+                MediaStore.Images.Media._ID,
+                "width",
+                "height"};
 
         @Override
         public Loader<Cursor> onCreateLoader(int id, Bundle args) {
@@ -480,9 +515,14 @@ public class MultiImageSelectorFragment extends Fragment {
                     data.moveToFirst();
                     do{
                         String path = data.getString(data.getColumnIndexOrThrow(IMAGE_PROJECTION[0]));
+                        if (!new File(path).exists()){
+                            continue;
+                        }
                         String name = data.getString(data.getColumnIndexOrThrow(IMAGE_PROJECTION[1]));
                         long dateTime = data.getLong(data.getColumnIndexOrThrow(IMAGE_PROJECTION[2]));
-                        Image image = new Image(path, name, dateTime);
+                        int width = data.getInt(data.getColumnIndexOrThrow(IMAGE_PROJECTION[4]));
+                        int height = data.getInt(data.getColumnIndexOrThrow(IMAGE_PROJECTION[5]));
+                        Image image = new Image(path, name, dateTime,width,height);
                         images.add(image);
                         if( !hasFolderGened ) {
                             // 获取文件夹名称
@@ -535,4 +575,11 @@ public class MultiImageSelectorFragment extends Fragment {
         void onImageUnselected(String path);
         void onCameraShot(File imageFile);
     }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        deleteImage();
+    }
+
 }

@@ -6,8 +6,9 @@
 
     <include
         android:layout_width="match_parent"
-        android:layout_height="?android:attr/actionBarSize"
+        android:layout_height="44dp"
         layout="@layout/cmp_customer_actionbar" />
+    <!--android:layout_height="?android:attr/actionBarSize"-->
 
     <FrameLayout
         android:id="@+id/image_grid"

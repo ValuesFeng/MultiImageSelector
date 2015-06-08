@@ -1,6 +1,7 @@
 package me.nereo.multi_image_selector.adapter;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -244,6 +245,7 @@ public class ImageGridAdapter extends BaseAdapter {
                                 //.error(R.drawable.default_error)
                         .resize(mItemSize, mItemSize)
                         .centerCrop()
+                        .config(Bitmap.Config.RGB_565)
                         .into(image);
             }
         }

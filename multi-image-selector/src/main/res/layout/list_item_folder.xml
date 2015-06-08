@@ -3,7 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:paddingTop="10dp"
     android:paddingBottom="10dp"
-    android:background="@android:color/white"
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
@@ -12,9 +11,8 @@
         android:layout_centerVertical="true"
         android:layout_marginLeft="10dp"
         android:id="@+id/cover"
-        tools:src="@drawable/btn_back"
         android:layout_gravity="center_vertical"
-        android:scaleType="centerInside"
+        android:scaleType="centerCrop"
         android:src="@drawable/default_error"
         android:layout_width="@dimen/folder_cover_size"
         android:layout_height="@dimen/folder_cover_size" />

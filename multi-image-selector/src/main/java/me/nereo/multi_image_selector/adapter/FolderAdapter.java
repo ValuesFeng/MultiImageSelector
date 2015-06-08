@@ -1,6 +1,7 @@
 package me.nereo.multi_image_selector.adapter;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -144,6 +145,7 @@ public class FolderAdapter extends BaseAdapter {
                     .placeholder(R.drawable.default_error)
                     .resize(mImageSize, mImageSize)
                     .centerCrop()
+                    .config(Bitmap.Config.RGB_565)
                     .into(cover);
             // TODO 选择标识
         }

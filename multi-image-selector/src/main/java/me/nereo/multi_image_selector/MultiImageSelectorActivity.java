@@ -77,6 +77,11 @@ public class MultiImageSelectorActivity extends FragmentActivity implements Mult
             mSubmitButton.setText("完成("+resultList.size()+"/"+mDefaultCount+")");
             mSubmitButton.setEnabled(true);
         }
+        if (mode==MODE_SINGLE){
+            mSubmitButton.setVisibility(View.GONE);
+        }else {
+            mSubmitButton.setVisibility(View.VISIBLE);
+        }
         mSubmitButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
