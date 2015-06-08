@@ -15,12 +15,11 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.nereo.multi_image_selector.Image;
 import me.nereo.multi_image_selector.MultiImageSelectorActivity;
 
 
 public class MainActivity extends ActionBarActivity {
-
-    private static final int REQUEST_IMAGE = 2;
 
     private TextView mResultText;
     private RadioGroup mChoiceMode, mShowCamera;
@@ -54,12 +53,11 @@ public class MainActivity extends ActionBarActivity {
             @Override
             public void onClick(View view) {
 
-                int selectedMode = MultiImageSelectorActivity.MODE_MULTI;
-
+                int selectedMode;
                 if(mChoiceMode.getCheckedRadioButtonId() == R.id.single){
-                    selectedMode = MultiImageSelectorActivity.MODE_SINGLE;
+                    selectedMode = Image.MODE_SINGLE;
                 }else{
-                    selectedMode = MultiImageSelectorActivity.MODE_MULTI;
+                    selectedMode = Image.MODE_MULTI;
                 }
 
                 boolean showCamera = mShowCamera.getCheckedRadioButtonId() == R.id.show;
@@ -69,37 +67,22 @@ public class MainActivity extends ActionBarActivity {
                     maxNum = Integer.valueOf(mRequestNum.getText().toString());
                 }
 
-                Intent intent = new Intent(MainActivity.this, MultiImageSelectorActivity.class);
-                // 是否显示拍摄图片
-                intent.putExtra(MultiImageSelectorActivity.EXTRA_SHOW_CAMERA, showCamera);
-                // 最大可选择图片数量
-                intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_COUNT, maxNum);
-                // 选择模式
-                intent.putExtra(MultiImageSelectorActivity.EXTRA_SELECT_MODE, selectedMode);
-                // 默认选择
                 if(mSelectPath != null && mSelectPath.size()>0){
-                    intent.putExtra(MultiImageSelectorActivity.EXTRA_DEFAULT_SELECTED_LIST, mSelectPath);
+                    new Image().maxCount(maxNum).openCamera(showCamera).selectMode(selectedMode).putSelectedPath(mSelectPath).start(MainActivity.this);
+                }else {
+                    new Image().maxCount(maxNum).openCamera(showCamera).selectMode(selectedMode).start(MainActivity.this);
                 }
-                startActivityForResult(intent, REQUEST_IMAGE);
-
             }
         });
 
-/*        findViewById(R.id.button2).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, GestureImageActivity.class);
-                startActivity(intent);
-            }
-        });*/
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == REQUEST_IMAGE){
+        if(requestCode == Image.REQUEST_IMAGE){
             if(resultCode == RESULT_OK){
-                mSelectPath = data.getStringArrayListExtra(MultiImageSelectorActivity.EXTRA_RESULT);
+                mSelectPath = data.getStringArrayListExtra(Image.EXTRA_RESULT);
                 StringBuilder sb = new StringBuilder();
                 for(String p: mSelectPath){
                     sb.append(p);

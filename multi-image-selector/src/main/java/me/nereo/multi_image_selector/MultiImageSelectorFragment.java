@@ -44,6 +44,7 @@ import me.nereo.multi_image_selector.adapter.FolderAdapter;
 import me.nereo.multi_image_selector.adapter.ImageGridAdapter;
 import me.nereo.multi_image_selector.bean.Folder;
 import me.nereo.multi_image_selector.bean.Image;
+import me.nereo.multi_image_selector.utils.FileUtils;
 import me.nereo.multi_image_selector.utils.PictureUtils;
 import me.nereo.multi_image_selector.utils.TimeUtils;
 
@@ -107,6 +108,7 @@ public class MultiImageSelectorFragment extends Fragment {
     private int mGridWidth, mGridHeight;
 
     private Uri mTmpUri;
+//    private File mTmpFile;
 
     @Override
     public void onAttach(Activity activity) {
@@ -407,6 +409,10 @@ public class MultiImageSelectorFragment extends Fragment {
      * 选择相机
      */
     private void showCameraAction() {
+        if(mDesireImageCount == resultList.size()){
+            Toast.makeText(getActivity(), R.string.msg_amount_limit, Toast.LENGTH_SHORT).show();
+            return;
+        }
         // 跳转到系统照相机
 //        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 //        if(cameraIntent.resolveActivity(getActivity().getPackageManager()) != null){
@@ -418,12 +424,6 @@ public class MultiImageSelectorFragment extends Fragment {
 //        }else{
 //            Toast.makeText(getActivity(), R.string.msg_no_camera, Toast.LENGTH_SHORT).show();
 //        }
-
-        if(mDesireImageCount == resultList.size()){
-            Toast.makeText(getActivity(), R.string.msg_amount_limit, Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         String fileName = "img_" + System.currentTimeMillis() + ".jpg";
         ContentValues values = new ContentValues();
         values.put(MediaStore.Images.Media.TITLE, fileName);
