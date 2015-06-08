@@ -8,6 +8,7 @@ import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,6 +29,8 @@ import android.view.ViewTreeObserver;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.PopupWindow;
@@ -37,6 +40,8 @@ import android.widget.Toast;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,6 +52,12 @@ import me.nereo.multi_image_selector.bean.Image;
 import me.nereo.multi_image_selector.utils.FileUtils;
 import me.nereo.multi_image_selector.utils.PictureUtils;
 import me.nereo.multi_image_selector.utils.TimeUtils;
+
+import static android.media.ExifInterface.ORIENTATION_NORMAL;
+import static android.media.ExifInterface.ORIENTATION_ROTATE_180;
+import static android.media.ExifInterface.ORIENTATION_ROTATE_270;
+import static android.media.ExifInterface.ORIENTATION_ROTATE_90;
+import static android.media.ExifInterface.TAG_ORIENTATION;
 
 /**
  * 图片选择Fragment
@@ -74,7 +85,6 @@ public class MultiImageSelectorFragment extends Fragment {
     // 请求加载系统照相机
     private static final int REQUEST_CAMERA = 100;
 
-
     // 结果数据
     private ArrayList<String> resultList = new ArrayList<>();
     // 文件夹数据
@@ -94,7 +104,7 @@ public class MultiImageSelectorFragment extends Fragment {
     // 类别
     private TextView mCategoryText;
     // 预览按钮
-    private Button mPreviewBtn;
+//    private Button mPreviewBtn;
     // 底部View
     private View mPopupAnchorView;
     //弹出popupwindow透明背景
@@ -180,19 +190,22 @@ public class MultiImageSelectorFragment extends Fragment {
             }
         });
 
-        mPreviewBtn = (Button) view.findViewById(R.id.preview);
-        // 初始化，按钮状态初始化
-        if(resultList == null || resultList.size()<=0){
-            mPreviewBtn.setText(R.string.preview);
-            mPreviewBtn.setEnabled(false);
-        }
-        mPreviewBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                // TODO 预览
-            }
-        });
-
+        /**
+         * TODO:图片预览   不要删除注释!!!
+         */
+//        mPreviewBtn = (Button) view.findViewById(R.id.preview);
+//        // 初始化，按钮状态初始化
+//        if(resultList == null || resultList.size()<=0){
+//            mPreviewBtn.setText(R.string.preview);
+//            mPreviewBtn.setEnabled(false);
+//        }
+//        mPreviewBtn.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                // TODO 预览
+//
+//            }
+//        });
         mGridView = (GridView) view.findViewById(R.id.grid);
         mGridView.setOnScrollListener(new AbsListView.OnScrollListener() {
             @Override
@@ -286,7 +299,6 @@ public class MultiImageSelectorFragment extends Fragment {
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
 
                 mFolderAdapter.setSelectIndex(i);
-
                 final int index = i;
                 final AdapterView v = adapterView;
 
@@ -445,13 +457,16 @@ public class MultiImageSelectorFragment extends Fragment {
             if(mode == MODE_MULTI) {
                 if (resultList.contains(image.path)) {
                     resultList.remove(image.path);
-                    if(resultList.size() != 0) {
-                        mPreviewBtn.setEnabled(true);
-                        mPreviewBtn.setText(getResources().getString(R.string.preview) + "(" + resultList.size() + ")");
-                    }else{
-                        mPreviewBtn.setEnabled(false);
-                        mPreviewBtn.setText(R.string.preview);
-                    }
+                    /**
+                     * TODO:图片预览   不要删除注释!!!
+                     */
+//                    if(resultList.size() != 0) {
+//                        mPreviewBtn.setEnabled(true);
+//                        mPreviewBtn.setText(getResources().getString(R.string.preview) + "(" + resultList.size() + ")");
+//                    }else{
+//                        mPreviewBtn.setEnabled(false);
+//                        mPreviewBtn.setText(R.string.preview);
+//                    }
                     if (mCallback != null) {
                         mCallback.onImageUnselected(image.path);
                     }
@@ -463,8 +478,11 @@ public class MultiImageSelectorFragment extends Fragment {
                     }
 
                     resultList.add(image.path);
-                    mPreviewBtn.setEnabled(true);
-                    mPreviewBtn.setText(getResources().getString(R.string.preview) + "(" + resultList.size() + ")");
+                    /**
+                     * TODO:图片预览   不要删除注释!!!
+                     */
+//                    mPreviewBtn.setEnabled(true);
+//                    mPreviewBtn.setText(getResources().getString(R.string.preview) + "(" + resultList.size() + ")");
                     if (mCallback != null) {
                         mCallback.onImageSelected(image.path);
                     }
@@ -485,9 +503,7 @@ public class MultiImageSelectorFragment extends Fragment {
                 MediaStore.Images.Media.DATA,
                 MediaStore.Images.Media.DISPLAY_NAME,
                 MediaStore.Images.Media.DATE_ADDED,
-                MediaStore.Images.Media._ID,
-                "width",
-                "height"};
+                MediaStore.Images.Media._ID};
 
         @Override
         public Loader<Cursor> onCreateLoader(int id, Bundle args) {
@@ -520,9 +536,7 @@ public class MultiImageSelectorFragment extends Fragment {
                         }
                         String name = data.getString(data.getColumnIndexOrThrow(IMAGE_PROJECTION[1]));
                         long dateTime = data.getLong(data.getColumnIndexOrThrow(IMAGE_PROJECTION[2]));
-                        int width = data.getInt(data.getColumnIndexOrThrow(IMAGE_PROJECTION[4]));
-                        int height = data.getInt(data.getColumnIndexOrThrow(IMAGE_PROJECTION[5]));
-                        Image image = new Image(path, name, dateTime,width,height);
+                        Image image = new Image(path, name, dateTime);
                         images.add(image);
                         if( !hasFolderGened ) {
                             // 获取文件夹名称

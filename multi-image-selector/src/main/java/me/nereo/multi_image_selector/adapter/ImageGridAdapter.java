@@ -153,7 +153,7 @@ public class ImageGridAdapter extends BaseAdapter {
 
     @Override
     public int getCount() {
-        return showCamera ? mImages.size()+1 : mImages.size();
+            return showCamera ? mImages.size()+1 : mImages.size();
     }
 
     @Override
